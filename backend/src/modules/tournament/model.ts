@@ -27,6 +27,7 @@ export interface ITournament {
         code: string;
         logo: string;
         slug: string;
+        toornament: string;
     };
     state: {
         archived: boolean;
@@ -40,7 +41,7 @@ export interface ITournamentDocument extends ITournament, Mongo.Document {
 
 const tournamentSchema: Mongo.Schema = new Mongo.Schema({
     name: {
-        faker: "company.companyName",
+        faker: "company.company.name",
         type: String
     },
     dates: {
@@ -67,7 +68,8 @@ const tournamentSchema: Mongo.Schema = new Mongo.Schema({
     settings: {
         code: String,
         logo: String,
-        slug: String
+        slug: String,
+        toornament: String
     },
     state: {
         archived: Boolean,

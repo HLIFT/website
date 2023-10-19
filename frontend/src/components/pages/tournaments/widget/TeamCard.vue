@@ -4,6 +4,61 @@
             <div class="title">
                 Prêt à rejoindre l'arène ?
             </div>
+            <div class="join">
+                <SInput
+                    v-model="student.name"
+                    autocomplete="false"
+                    :modified="student.name !== userStore.student.name"
+                    title="Prénom et nom"
+                    @enter="sendUpdate"
+                />
+                <SInput
+                    v-if="associationStore?.school?.name"
+                    disabled
+                    :model-value="associationStore?.school?.name"
+                    title="École"
+                />
+                <div
+                    v-else
+                    class="school"
+                >
+                    <SInput
+                        v-model="student.schoolName"
+                        autocomplete="false"
+                        :modified="student.schoolName !== userStore.student.schoolName"
+                        title="École"
+                        @enter="sendUpdate"
+                    />
+                    <SCard
+                        v-if="schools.length > 0 || searchLoading"
+                        class="suggestion"
+                    >
+                        <SLoading
+                            v-if="searchLoading"
+                            class="loading"
+                        />
+                        <ul v-else>
+                            <li
+                                v-for="school of schools"
+                                :key="school.name"
+                                tabindex="-1"
+                                @click="student.schoolName = school.name"
+                            >
+                                {{ school.name }}
+                            </li>
+                        </ul>
+                    </SCard>
+                </div>
+                <SModalSectionDescription>
+                    <strong>Note :</strong> Si votre école n'est pas suggérée, ce n'est pas grave, inscrivez-la quand même.
+                </SModalSectionDescription>
+                <SInput
+                    v-model="username"
+                    :modified="username !== ''"
+                    :title="tournament.game.username"
+                    @enter="sendUpdate"
+                />
+            </div>
             <div class="buttons">
                 <template v-if="isTeamBased">
                     <SButton
@@ -31,6 +86,31 @@
     </template>
     <template v-else>
         <SCard class="join">
+            <div class="message">
+                <div class="header">
+                    Les inscriptions sont terminées 🏆 !
+                </div>
+                <SModalSectionDescription class="description">
+                    <br>
+                    <template v-if="team.state.validated">
+                        <template v-if="isTeamReady">
+                            Vous êtes correctement inscrit au tournoi 🥳 ! Pensez à mettre à jour vos informations manquantes s'il y en a.<br><br>
+                            Pour participer, merci de rejoindre le serveur Discord à l'adresse suivante : <a href="https://discord.gg/YePmUx2E5a">https://discord.gg/YePmUx2E5a</a>
+                        </template>
+                        <template v-else>
+                            Les inscriptions sont maintenant terminées et votre équipe est bien inscrite au tournoi.<br><br>
+                            Attention! Il vous reste des informations à remplir ci-dessous. Merci de compléter ces informations afin de ne pas être exclus du tournoi.<br><br>
+                            Pour participer, merci de rejoindre le serveur Discord à l'adresse suivante : <a href="https://discord.gg/YePmUx2E5a">https://discord.gg/YePmUx2E5a</a>
+                        </template>
+                    </template>
+                    <template v-else>
+                        Votre équipe n'a pas été validée pour participer au tournoi l'Académie 2.<br><br>
+                        Les inscriptions au tournoi sont terminées et les informations de votre équipe étaient incomplètes ou invalides.<br><br>
+                        Si vous pensez qu'il s'agit d'une erreur, vous pouvez nous contacter sur Discord avant le début du tournoi le mardi 16/11.<br>
+                        <a href="https://discord.gg/YePmUx2E5a">https://discord.gg/YePmUx2E5a</a>
+                    </template>
+                </SModalSectionDescription>
+            </div>
             <template v-if="isTeamBased">
                 <h2>Équipe</h2>
                 <SInput
@@ -75,6 +155,12 @@
                 :validators="[InputValidators.Discord()]"
                 @enter="sendUpdate"
             />
+            <SModalSectionDescription>
+                <strong>Attention : </strong> Vous devez <a
+                    href="https://discord.gg/YePmUx2E5a"
+                    target="_blank"
+                >rejoindre le Discord</a> pour participer !
+            </SModalSectionDescription>
             <h2>Statut étudiant</h2>
             <SInput
                 v-model="student.name"
@@ -242,7 +328,7 @@
                     <div class="contact">
                         <span
                             class="certificate"
-                            :class="{error: member.user.student.status !== 'validated'}"
+                            :class="{error: ['rejected', 'undefined'].includes(member.user.student.status), warning: member.user.student.status === 'processing'}"
                             title="Certificat étudiant"
                         >
                             <FontAwesomeIcon :icon="['fas', 'id-card']" />
@@ -301,7 +387,6 @@ import SValidator from "@/components/design/forms/Validator.vue";
 import SCopier from "@/components/design/forms/Copier.vue";
 import { getAvatarUrl as getUserAvatarUrl } from "@/services/user";
 import SModalSectionDescription from "@/components/design/modal/SectionDescription.vue";
-import * as AssociationService from "@/services/association";
 import SLoading from "@/components/design/Loading.vue";
 
 const router = useRouter();
@@ -314,6 +399,8 @@ const savedTeam = reactive(Team.Lib.makeObject({}));
 const team = reactive<Team.TTeam>(cloneDeep(savedTeam));
 const student = reactive(cloneDeep(userStore.student));
 const platforms = reactive(cloneDeep(userStore.platforms));
+
+const username = ref("");
 
 const props = defineProps<{
     tournament: TTournament;
@@ -346,7 +433,7 @@ const isTeamBased = computed(() => {
 const debounceSearch = debounce(updateSearch, 500);
 const searchLoading = ref(false);
 
-const schools = ref([] as Array<{name: string}>);
+const schools = ref([] as Array<{ name: string }>);
 
 watch(
     () => student.schoolName,
@@ -356,13 +443,21 @@ watch(
     }
 );
 
+watch (
+    () => platforms.discord,
+    () => {
+        platforms.discord = platforms.discord.replace(" #", "#");
+    }
+);
+
 async function updateSearch() {
     schools.value = await TeamService.searchSchools(tournamentSlug.value, student.schoolName);
     searchLoading.value = false;
 }
 
-const uploadCertificate = async(file: File) => {
+const uploadCertificate = async (file: File) => {
     await userStore.uploadCertificate(file);
+    await userStore.init();
 };
 
 async function joinTeam() {
@@ -379,6 +474,10 @@ async function joinTeam() {
     if (response?.success) {
         await updateTeam();
     }
+
+    team.members[playerIndex.value].username = username.value;
+
+    await sendUpdate();
 }
 
 async function createTeam() {
@@ -389,6 +488,10 @@ async function createTeam() {
     if (response?.success) {
         await updateTeam();
     }
+
+    team.members[playerIndex.value].username = username.value;
+
+    await sendUpdate();
 }
 
 async function updateTeam() {
@@ -445,7 +548,7 @@ function isMemberReady(member: { user: User.TCompleteUser; username: string }): 
         return false;
     }
 
-    if (member.user.student.status !== "validated") {
+    if (!["validated", "processing"].includes(member.user.student.status)) {
         return false;
     }
 
@@ -487,6 +590,9 @@ async function kickMember(memberIndex: number) {
 }
 
 const markReady = async () => {
+    if (!isTeamReady.value) {
+        return;
+    }
     team.state.ready = true;
     await sendUpdate();
 };
@@ -539,6 +645,26 @@ h2 {
     flex-direction: column;
     justify-content: center;
     gap: var(--length-gap-l);
+
+    .message {
+        .header {
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+
+        .description {
+            font-size: 1.2rem;
+
+            a:hover {
+                text-decoration: none;
+            }
+
+            b {
+                font-weight: 600;
+                color: var(--color-primary);
+            }
+        }
+    }
 
     .title {
         text-align: center;
@@ -666,6 +792,10 @@ h2 {
 
         .error {
             color: var(--color-error-lite);
+        }
+
+        .warning {
+            color: var(--color-warning-lite);
         }
     }
 

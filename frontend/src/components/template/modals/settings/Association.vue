@@ -112,6 +112,14 @@
                         :validators="[InputValidators.Url()]"
                         @enter="sendUpdate"
                     />
+                    <SInput
+                        v-model="association.networks.discord"
+                        :modified="association.networks.discord !== associationStore.networks.discord"
+                        title="Discord"
+                        type="url"
+                        :validators="[InputValidators.Url()]"
+                        @enter="sendUpdate"
+                    />
                 </SModalSection>
                 <SModalSectionTitle>
                     Paramètres
@@ -121,7 +129,7 @@
                         v-model="association.settings.slug"
                         :modified="association.settings.slug !== associationStore.settings.slug"
                         title="Slug"
-                        :validators="[InputValidators.OnlyLettersAndDashes()]"
+                        :validators="[InputValidators.Slug()]"
                         @enter="sendUpdate"
                     />
                     <SModalSectionDescription>
@@ -375,7 +383,6 @@ export default defineComponent({
             if (!hasChanged.value) {
                 return;
             }
-
             await associationStore.update(association);
         };
 

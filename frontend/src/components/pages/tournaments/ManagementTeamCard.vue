@@ -32,7 +32,10 @@
                     />
                     Vérification
                 </div>
-                <div class="chip export">
+                <div
+                    class="chip export"
+                    @click="exportTeam({_id: team._id})"
+                >
                     <FontAwesomeIcon
                         class="icon"
                         :icon="['fas', 'upload']"
@@ -90,13 +93,15 @@
                 </td>
                 <td>
                     <div class="contact">
-                        <span
+                        <a
                             class="certificate"
-                            :class="{error: member.user.student.status !== 'validated'}"
-                            title="Certificat étudiant"
+                            :class="{error: member.user.student.status === 'undefined',rejected: member.user.student.status === 'rejected', warning: member.user.student.status === 'processing'}"
+                            :href="'/admin/certificates/'+member.user._id"
+                            target="_blank"
+                            :title="'Certificat étudiant ('+member.user.student.status+')'"
                         >
                             <FontAwesomeIcon :icon="['fas', 'id-card']" />
-                        </span>
+                        </a>
                         <SCopier
                             class="button"
                             :content="member.user.mail"
@@ -184,8 +189,16 @@ export default defineComponent({
             }
         }
 
+        async function exportTeam(team: { _id: string }) {
+            await Toast.testRequest(async () => {
+                return await AdminService.teamExport(team);
+            });
+        }
+
         return {
+            exportTeam,
             getUserAvatarUrl: UserService.getAvatarUrl,
+            getUserCertificateUrl: UserService.getCertificateUrl,
             isMemberReady,
             updateTeam
         };
@@ -314,6 +327,14 @@ export default defineComponent({
 
             .error {
                 color: var(--color-error-lite);
+            }
+
+            .rejected {
+                color: #ff0000;
+            }
+
+            .warning {
+                color: var(--color-warning-lite);
             }
         }
 

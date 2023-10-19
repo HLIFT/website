@@ -1,12 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { Static, Type } from "@sinclair/typebox";
-import { escapeRegExp } from "lodash";
 import * as UserLib from "../../user/lib";
-import UserModel, { ERoles, IUserDocument } from "@/modules/user/model";
+import { ERoles } from "@/modules/user/model";
 import { TypeAdminUser } from "@/modules/user/type";
+import { userSearch } from "@/modules/admin/lib/search";
 
 const SchemaRequest = Type.Object({
-    limit: Type.Number({ default: 20, maximum: 50, minimum: 1 }),
+    limit: Type.Number({ default: 20, maximum: 100, minimum: 1 }),
     search: Type.Optional(Type.String()),
     skip: Type.Number({ default: 0, minimum: 0 })
 });
@@ -41,26 +41,4 @@ export async function register(server: FastifyInstance): Promise<void> {
             });
         }
     );
-}
-
-async function userSearch({ limit, search, skip }: { limit: number; search?: string; skip: number }): Promise<Array<IUserDocument>> {
-
-    const findParameters = {} as Record<string, any>;
-
-    if (search) {
-        const searchRegex = new RegExp(escapeRegExp(search), "gi");
-
-        findParameters.$or = [
-            { "name": searchRegex },
-            { "username": searchRegex },
-            { "mail": searchRegex }
-        ];
-    }
-
-    return UserModel.find(findParameters)
-        .sort({ "_id": -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate("association")
-        .exec();
 }

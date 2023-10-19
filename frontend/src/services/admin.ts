@@ -11,6 +11,11 @@ export async function userCertificate(update: { _id?: string; status?: string })
     return result.data;
 }
 
+export async function userGet(user: { _id?: string }): Promise<any> {
+    const result = await ApiService.get(`/admin/user/${ user._id }`);
+    return result.data;
+}
+
 export async function associationSearch(query: { limit: number; search: string; skip: number }): Promise<any> {
     const result = await ApiService.get("/admin/association/search", { params: query });
     return result.data;
@@ -28,6 +33,11 @@ export async function teamList(tournamentSlug: string, management: string): Prom
 
 export async function teamManage(update: {_id: string; validated?: boolean }): Promise<any> {
     const result = await ApiService.post("/team/manage", update);
+    return result.data;
+}
+
+export async function teamExport(team: {_id: string}): Promise<any> {
+    const result = await ApiService.post("/team/export", team);
     return result.data;
 }
 

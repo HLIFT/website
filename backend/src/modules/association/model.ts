@@ -27,6 +27,7 @@ export interface IAssociation {
     logo: string;
     mail: string;
     networks: {
+        discord: string;
         facebook: string;
         instagram: string;
         twitch: string;
@@ -56,7 +57,7 @@ export interface IAssociationDocument extends IAssociation, Mongo.Document {
 
 const associationSchema: Mongo.Schema = new Mongo.Schema({
     name: {
-        faker: "company.companyName",
+        faker: "company.company.name",
         required: true,
         type: String
     },
@@ -81,6 +82,9 @@ const associationSchema: Mongo.Schema = new Mongo.Schema({
         type: String
     },
     networks: {
+        discord: {
+            type: String
+        },
         facebook: {
             type: String
         },

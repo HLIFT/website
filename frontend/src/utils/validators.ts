@@ -12,6 +12,16 @@ export function NotEmpty(): InputValidator {
     };
 }
 
+export function Slug(): InputValidator {
+    return {
+        execute(value: string) {
+            const charRegex = /^[A-Za-z0-9-_]+$/;
+            return charRegex.test(value);
+        },
+        message: "Seulement des lettres, chiffres ou des tirets"
+    };
+}
+
 export function OnlyLettersAndNumbers(): InputValidator {
     return {
         execute(value: string) {
@@ -64,8 +74,8 @@ export function Url(): InputValidator {
 export function Discord(): InputValidator {
     return {
         execute(value: string) {
-            const discordRegex = /^.+#[0-9]{4}$/;
-            return discordRegex.test(value);
+            const discordRegex = /^[A-Za-z0-9._]+$/;
+            return discordRegex.test(value) && value.length >= 2 && value.length <= 32;
         },
         message: "Format d'identifiant Discord"
     };
